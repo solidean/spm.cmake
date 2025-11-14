@@ -1,0 +1,69 @@
+# Style file for clang-format ( http://clang.llvm.org/docs/ClangFormatStyleOptions.html )
+
+# Style is based on google's c++ coding style.
+# see http://google-styleguide.googlecode.com/svn/trunk/cppguide.xml
+BasedOnStyle: Google
+#Language: Cpp
+Standard: Cpp23
+
+
+# columns guideline
+ColumnLimit: 150
+PenaltyExcessCharacter: 1
+PenaltyBreakString: 50
+
+
+# Indentation and Braces
+IndentWidth: 4
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: All
+AllowShortCaseLabelsOnASingleLine: true
+AlwaysBreakBeforeMultilineStrings: false
+BreakTemplateDeclarations: true
+BreakBeforeBinaryOperators: true
+BreakBeforeTernaryOperators: true
+BreakBeforeConceptDeclarations: true
+BreakConstructorInitializersBeforeComma: false
+BreakBeforeBraces: Allman
+BinPackParameters: false
+PackConstructorInitializers: NextLine
+Cpp11BracedListStyle: true
+IndentCaseLabels: false
+RequiresClausePosition: OwnLine
+
+
+# Spaces
+DerivePointerAlignment: false
+PointerAlignment: Left
+MaxEmptyLinesToKeep: 2
+SpaceAfterControlStatementKeyword: true
+SpaceBeforeAssignmentOperators: true
+SpaceInEmptyParentheses: false
+SpacesBeforeTrailingComments: 1
+SpacesInAngles: false
+SpacesInCStyleCastParentheses: false
+SpacesInParentheses: false
+#SpacesInSquareBrackets: false
+UseTab: Never
+ConstructorInitializerIndentWidth: 2
+AccessModifierOffset: -4
+
+
+# Comments
+FixNamespaceComments: true
+AlignTrailingComments: true
+
+# Includes
+SortIncludes: true
+IncludeBlocks: Regroup
+IncludeCategories:
+  - Regex:  '^"'
+    Priority: 1
+  - Regex:  '^<@PROJECT_SLUG@/'
+    Priority: 2
+  - Regex:  '^<'
+    Priority: 3
+
+# east const
+QualifierAlignment: Right
