@@ -9,18 +9,34 @@ if(NOT CMAKE_SCRIPT_MODE_FILE)
     message(FATAL_ERROR "Run via: cmake -P spm.cmake -- init")
 endif()
 
-# Parse command-line arguments
-# Extract the command (first argument after --) and remaining arguments
-list(LENGTH CMAKE_ARGV cmake_argc)
-if(cmake_argc GREATER 3)
-    list(GET CMAKE_ARGV 3 spm_command)
-    if(cmake_argc GREATER 4)
-        list(SUBLIST CMAKE_ARGV 4 -1 spm_args)
-    else()
-        set(spm_args "")
+# Find the "--" separator
+set(separator_index -1)
+foreach(i RANGE 0 ${last_index})
+    if("${CMAKE_ARGV${i}}" STREQUAL "--")
+        set(separator_index ${i})
+        break()
     endif()
-else()
+endforeach()
+
+if(separator_index EQUAL -1)
+    message(FATAL_ERROR "Missing '--' separator. Usage: cmake -P spm.cmake -- <command> [args...]")
+endif()
+
+# Extract command and arguments after "--"
+math(EXPR command_index "${separator_index} + 1")
+if(command_index GREATER last_index)
     message(FATAL_ERROR "No command specified. Usage: cmake -P spm.cmake -- <command> [args...]")
+endif()
+
+set(spm_command "${CMAKE_ARGV${command_index}}")
+
+# Collect remaining arguments
+set(spm_args "")
+math(EXPR args_start_index "${command_index} + 1")
+if(args_start_index LESS_EQUAL last_index)
+    foreach(i RANGE ${args_start_index} ${last_index})
+        list(APPEND spm_args "${CMAKE_ARGV${i}}")
+    endforeach()
 endif()
 
 # Handle "init*" commands - Bootstrap SPM in the current project

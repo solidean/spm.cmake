@@ -1,0 +1,9 @@
+
+# clangd cache
+.cache/
+
+# in-source build
+build/
+
+# root compile commands for clangd
+compile_commands.json

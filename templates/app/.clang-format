@@ -4,7 +4,7 @@
 # see http://google-styleguide.googlecode.com/svn/trunk/cppguide.xml
 BasedOnStyle: Google
 #Language: Cpp
-Standard: Cpp23
+Standard: Latest
 
 
 # columns guideline
@@ -62,8 +62,10 @@ IncludeCategories:
     Priority: 1
   - Regex:  '^<@PROJECT_SLUG@/'
     Priority: 2
-  - Regex:  '^<'
+  - Regex: '^<.*\.(h|hh|hpp|hxx)>'  # <foo/bar/file.h>, <x.hh>, ...
     Priority: 3
+  - Regex: '^<'                     # stdlib
+    Priority: 4
 
 # east const
 QualifierAlignment: Right
