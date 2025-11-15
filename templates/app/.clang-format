@@ -44,7 +44,7 @@ SpacesBeforeTrailingComments: 1
 SpacesInAngles: false
 SpacesInCStyleCastParentheses: false
 SpacesInParentheses: false
-#SpacesInSquareBrackets: false
+SpacesInSquareBrackets: false
 UseTab: Never
 ConstructorInitializerIndentWidth: 2
 AccessModifierOffset: -4
@@ -54,7 +54,14 @@ AccessModifierOffset: -4
 FixNamespaceComments: true
 AlignTrailingComments: true
 
-# Includes
+
+# Includes are grouped by "distance": local file, project headers,
+# external library headers, then the standard library. This ordering
+# improves include hygiene: headers pulled in close to the current file
+# are least likely to hide missing dependencies in other headers, while
+# project-wide and external includes follow in widening rings. When a
+# header forgets to include something it depends on, this grouping makes
+# the failure appear earlier and prevents accidental masking.
 SortIncludes: true
 IncludeBlocks: Regroup
 IncludeCategories:
@@ -67,5 +74,13 @@ IncludeCategories:
   - Regex: '^<'                     # stdlib
     Priority: 4
 
-# east const
+
+# We use east const (`T const`) via `QualifierAlignment: Right`.
+# In modern C++, any name used as a type must behave like a real type alias.
+# The only known semantic changes triggered by this option arise from
+# macro-typedefs such as `#define P int*`, where `const P a` and `P const a`
+# do not denote the same type. This discrepancy does not exist with `using P = int*`
+# and is therefore treated as a bug in the original code, not in the formatter.
+# If a rewrite changes meaning, it reveals a preprocessor-based type that should
+# be replaced with a proper alias or renamed to make its intent explicit.
 QualifierAlignment: Right
