@@ -2,8 +2,13 @@ cmake_minimum_required(VERSION 3.28)
 project(@PROJECT_SLUG@ LANGUAGES CXX)
 
 # dependencies
-include("${CMAKE_SOURCE_DIR}/extern/spm.cmake/spm.cmake")
-spm_require(clean-core dfc52ee09fe3da37638d8d7d0c6176c59a367562)
+if(SPM_ENABLED)
+    spm_require(
+        NAME clean-core
+        GIT_URL https://github.com/project-arcana/clean-core.git
+        MIN_COMMIT dfc52ee09fe3da37638d8d7d0c6176c59a367562
+    )
+endif()
 
 # Define the library and its sources
 add_library(@PROJECT_SLUG@

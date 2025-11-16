@@ -9,6 +9,15 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 
+# External packages
+include(${CMAKE_CURRENT_SOURCE_DIR}/spm.cmake)
+spm_package(
+    NAME clean-core
+    GIT_URL https://github.com/project-arcana/clean-core.git
+    COMMIT dfc52ee09fe3da37638d8d7d0c6176c59a367562
+)
+
+
 # Application binary
 # Source list only: CMake builds translation units, so list all .cc files here.
 # Headers aren't needed: VS Code shows the filesystem and clangd uses compile_commands.json.
