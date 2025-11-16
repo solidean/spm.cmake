@@ -34,7 +34,7 @@ TODO: specify name, specify template
 
 continue:
 * spm_finalize (for constraint checking)
-  * move name normalization into helper
+  * move name normalization into helper (and allow ".")
   * without git repo cache, we can only check for FULL
 * make checkout type cache var & overrideable
 * git repo cache

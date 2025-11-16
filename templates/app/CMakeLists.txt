@@ -9,13 +9,14 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 
-# External packages
+# External packages, managed via SPM
 include(${CMAKE_CURRENT_SOURCE_DIR}/spm.cmake)
 spm_package(
     NAME clean-core
     GIT_URL https://github.com/project-arcana/clean-core.git
     COMMIT dfc52ee09fe3da37638d8d7d0c6176c59a367562
 )
+spm_finalize()
 
 
 # Application binary
