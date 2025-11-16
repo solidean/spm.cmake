@@ -46,6 +46,10 @@
 #     is wired into the CMake target graph.
 #
 function(spm_package)
+    if(NOT SPM_ENABLED)
+        set(SPM_ENABLED ON CACHE INTERNAL "SPM is enabled (set by spm_package)")
+    endif()
+
     set(options NO_ADD_SUBDIRECTORY)
     set(oneValueArgs NAME GIT_URL COMMIT CHECKOUT)
     cmake_parse_arguments(SPM "${options}" "${oneValueArgs}" "" ${ARGN})
@@ -214,6 +218,12 @@ function(spm_package)
 
         # For WORKTREE/VENDORED we just blow away the directory and recreate.
         # For FULL we prefer in-place update if the dir exists, otherwise clone.
+        # TODO:
+        #   system for externally cached git repos
+        #   a global system cache with entries per repo
+        #   does shallow fetches + filtered fetched for ancestry
+        #   then copies over worktrees
+        #   "FULL" is then adding that as secondary remote and checkout out from there
         if(_spm_checkout_mode STREQUAL "FULL")
             if(NOT _spm_have_dir)
                 file(MAKE_DIRECTORY "${SPM_EXTERN_DIR}")

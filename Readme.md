@@ -32,6 +32,13 @@ TODO: specify name, specify template
 
 ## TODO
 
+continue:
+* spm_finalize (for constraint checking)
+  * move name normalization into helper
+  * without git repo cache, we can only check for FULL
+* make checkout type cache var & overrideable
+* git repo cache
+
 * specify multiple templates (layer semantics)
   * move .clang-format into separate layer
   * CMakePresets.json / launch.json / settings.json are _similar_
