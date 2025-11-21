@@ -8,16 +8,8 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-
 # External packages, managed via SPM
-include(${CMAKE_CURRENT_SOURCE_DIR}/spm.cmake)
-spm_package(
-    NAME clean-core
-    GIT_URL https://github.com/project-arcana/clean-core.git
-    COMMIT dfc52ee09fe3da37638d8d7d0c6176c59a367562
-)
-spm_finalize()
-
+include(${CMAKE_CURRENT_SOURCE_DIR}/packages.cmake)
 
 # Application binary
 # Source list only: CMake builds translation units, so list all .cc files here.
@@ -32,4 +24,10 @@ add_executable(@PROJECT_SLUG@
 target_include_directories(@PROJECT_SLUG@
     PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/src"
+)
+
+# link against dependencies (defined in packages.cmake)
+target_link_libraries(@PROJECT_SLUG@
+    PRIVATE
+    clean-core
 )
