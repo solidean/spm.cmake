@@ -12,7 +12,7 @@
 #
 # The GIT_URL here acts primarily as structured documentation: it’s the canonical
 # place to look when adding a missing package, and lets tooling pre-fill URLs.
-# In normal usage, the root app’s spm_package() overrides the location entirely.
+# In normal usage, the spm_package() in packages.cmake overrides the location entirely.
 #
 # The MIN_COMMIT expresses a true ancestry constraint: the final chosen commit
 # must be a descendant of MIN_COMMIT (`git merge-base --is-ancestor`). It

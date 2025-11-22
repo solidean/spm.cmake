@@ -6,6 +6,7 @@
 #       GIT_URL https://github.com/project-arcana/clean-core.git
 #       COMMIT  dfc52ee09fe3da37638d8d7d0c6176c59a367562
 #       [CHECKOUT WORKTREE|FULL|VENDORED]
+#       [UPDATE_REF <branch>]
 #       [NO_ADD_SUBDIRECTORY]
 #   )
 #
@@ -30,10 +31,10 @@
 #   * VENDORED: snapshot without .git and without .gitignore '*', so the package
 #               contents become part of the main repo history (“vendored” code).
 # - Names:
-#   * NAME must match ^[A-Za-z0-9_-]+$.
-#   * Normalized name = uppercase, '-' replaced by '_'.
+#   * NAME must match ^[A-Za-z0-9_.-]+$.
+#   * Normalized name = uppercase, '-' and '.' replaced by '_'.
 #   * There must not be two packages with the same normalized name
-#     (e.g. clean-core and CLEAN_CORE); that’s a hard error.
+#     (e.g. clean-core and CLEAN_CORE); that's a hard error.
 # - Control & speed:
 #   * Global toggle: SPM_AUTO_UPDATE (CACHE BOOL, default ON).
 #   * Per-package toggle: SPM_PKG_<PKG>_AUTO_UPDATE (CACHE BOOL, default ON).
@@ -51,7 +52,7 @@ function(spm_package)
     endif()
 
     set(options NO_ADD_SUBDIRECTORY)
-    set(oneValueArgs NAME GIT_URL COMMIT CHECKOUT)
+    set(oneValueArgs NAME GIT_URL COMMIT CHECKOUT UPDATE_REF)
     cmake_parse_arguments(SPM "${options}" "${oneValueArgs}" "" ${ARGN})
 
     if(NOT SPM_NAME)
@@ -65,15 +66,14 @@ function(spm_package)
     endif()
 
     # Validate name
-    if(NOT SPM_NAME MATCHES "^[A-Za-z0-9_-]+$")
+    if(NOT SPM_NAME MATCHES "^[A-Za-z0-9_.-]+$")
         message(FATAL_ERROR
             "spm_package: NAME '${SPM_NAME}' is invalid. "
-            "Allowed: [A-Za-z0-9_-]+")
+            "Allowed: [A-Za-z0-9_.-]+")
     endif()
 
-    # Normalize name: upper-case, '-' -> '_'
-    string(TOUPPER "${SPM_NAME}" SPM_NAME_NORM)
-    string(REPLACE "-" "_" SPM_NAME_NORM "${SPM_NAME_NORM}")
+    # Normalize name for use as CMake identifier
+    spm_normalize_name("${SPM_NAME}" SPM_NAME_NORM)
 
     # Enforce uniqueness of normalized names
     if(DEFINED "SPM_PKG_${SPM_NAME_NORM}_NAME")
@@ -81,7 +81,7 @@ function(spm_package)
             "spm_package: package '${SPM_NAME}' is being declared again. "
             "The normalized identifier '${SPM_NAME_NORM}' is already used by "
             "package '${SPM_PKG_${SPM_NAME_NORM}_NAME}'. "
-            "Each package name must be unique once normalized (uppercase, '-' → '_').")
+            "Each package name must be unique once normalized (uppercase, '-' and '.' → '_').")
     endif()
 
     # Extern root (default)
