@@ -1,6 +1,6 @@
 # Shaped Package Manager - spm.cmake
 
-## Quickstart
+## Quickstart (New Application)
 
 1. Copy `spm.cmake` into your repo (can be empty)
 2. Run `cmake -P spm.cmake -- init-app my-app ma`
@@ -9,7 +9,17 @@
    the uppercased default namespace becomes the prefix for its cmake options
 
 
-TODO: specify name, specify template
+## Quickstart (New Library)
+
+1. Copy `spm.cmake` into your repo (can be empty)
+2. Run `cmake -P spm.cmake -- init-lib my-lib ml`
+   `my-lib` is the slug, which is project name and include prefix for the files of that project
+   `ml` is the default namespace for the project, should be 2-4 chars long
+   the uppercased default namespace becomes the prefix for its cmake options
+3. Perform an initial commit
+4. Create a local dummy app with your new library as FULL dependency
+   (proper IDE experience, full dependency resolution)
+
 
 ## Commands
 
@@ -21,6 +31,7 @@ TODO: specify name, specify template
 * `vendor <lib>` - copies a package into the repo, removes the gitignore-all, adds VENDORED flag
 * `status` - check which packages are dirty
 * `fetch <lib>` - updates the library (* allowed) to the given commit
+
 
 ## Rationale
 

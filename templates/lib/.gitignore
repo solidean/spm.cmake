@@ -65,3 +65,14 @@ doxygen/
 *.tmp
 *.bak
 .ninja_log
+
+
+# 
+# Special ignores for libraries
+#
+
+# SPM should not be committed into libraries
+spm.cmake
+
+# Temporary extern dependencies (e.g. due to a local SPM) should not be committed
+extern/

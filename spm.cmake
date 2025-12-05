@@ -10,6 +10,7 @@ cmake_minimum_required(VERSION 3.28)
 if(CMAKE_SCRIPT_MODE_FILE)
 
     # Find the "--" separator
+    math(EXPR last_index "${CMAKE_ARGC} - 1")
     set(separator_index -1)
     foreach(i RANGE 0 ${last_index})
         if("${CMAKE_ARGV${i}}" STREQUAL "--")
