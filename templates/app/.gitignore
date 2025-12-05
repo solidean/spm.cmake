@@ -1,9 +1,67 @@
-
-# clangd cache
-.cache/
-
-# in-source build
+# Build directories
 build/
+out/
+bin/
+lib/
+dist/
+install/
 
-# root compile commands for clangd
+# CMake generated files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+CTestTestfile.cmake
+_deps/
+
+# Build artifacts
+*.o
+*.obj
+*.so
+*.so.*
+*.dylib
+*.dll
+*.a
+*.lib
+*.exe
+*.out
+*.app
+
+# IDE and editor files
+.cache/
+.clangd/
+.vs/
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Compilation database (clangd)
 compile_commands.json
+
+# Test and coverage artifacts
+Testing/
+*.gcov
+*.gcda
+*.gcno
+*.gcm
+coverage/
+*.profdata
+*.profraw
+
+# Package managers
+conan/
+vcpkg_installed/
+_deps/
+
+# Generated documentation
+docs/html/
+docs/latex/
+doxygen/
+
+# Temporary files
+*.log
+*.tmp
+*.bak
+.ninja_log
