@@ -30,5 +30,8 @@ else()
     string(REGEX REPLACE "^init-(.+)$" "\\1" spm_template "${spm_command}")
 endif()
 
+# Bring in all CLI commands
+include(${CMAKE_CURRENT_LIST_DIR}/cli.cmake)
+
 # Apply the selected template
 spm_apply_template(${spm_template} ${spm_project_slug} ${spm_project_namespace})
