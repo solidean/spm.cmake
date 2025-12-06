@@ -17,10 +17,6 @@ function(spm_finalize)
     # Get all registered requirements
     get_property(_spm_requirements GLOBAL PROPERTY SPM_REQUIREMENTS)
 
-    if(NOT _spm_requirements)
-        return()
-    endif()
-
     foreach(_req IN LISTS _spm_requirements)
         # Parse the record: "origin|name|git_url|min_commit"
         string(REPLACE "|" ";" _req_parts "${_req}")

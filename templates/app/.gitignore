@@ -54,6 +54,7 @@ coverage/
 conan/
 vcpkg_installed/
 _deps/
+extern/.gitignore
 
 # Generated documentation
 docs/html/
