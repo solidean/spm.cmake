@@ -27,6 +27,8 @@ In VS Code:
 
 ## Commands
 
+NOTE: after `init`, you can also directly use `./spm cmd arg0 arg1 ...` from the repo root
+
 * `init` (`init-<templatename>`) - sets up the spm code and applies some template
 * `update <lib> <branch-or-commit>` - changes the commit of a package (if branch, resolves it, then changes to that commit)
   * `<lib>` can be "*" to affect all

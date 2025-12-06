@@ -5,8 +5,8 @@ project(@PROJECT_SLUG@ LANGUAGES CXX)
 if(SPM_ENABLED)
     spm_require(
         NAME clean-core
-        GIT_URL https://github.com/project-arcana/clean-core.git
-        MIN_COMMIT dfc52ee09fe3da37638d8d7d0c6176c59a367562
+        GIT_URL https://github.com/solidean/clean-core.git
+        MIN_COMMIT 7cb6f36bc70d54cc16438dfe1b4765b653203195
     )
 endif()
 
