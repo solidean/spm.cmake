@@ -118,16 +118,16 @@ function(spm_package)
             "Auto-update SPM package ${SPM_NAME} when COMMIT/CHECKOUT changes")
     endif()
 
-    # Record requested state in non-cache vars
-    set("SPM_PKG_${SPM_NAME_NORM}_NAME" "${SPM_NAME}")
-    set("SPM_PKG_${SPM_NAME_NORM}_GIT_URL" "${SPM_GIT_URL}")
-    set("SPM_PKG_${SPM_NAME_NORM}_COMMIT" "${SPM_COMMIT}")
-    set("SPM_PKG_${SPM_NAME_NORM}_CHECKOUT" "${_spm_checkout_mode}")
+    # Record requested state in non-cache vars (global for spm_finalize and other spm_package invocations)
+    set("SPM_PKG_${SPM_NAME_NORM}_NAME" "${SPM_NAME}" PARENT_SCOPE)
+    set("SPM_PKG_${SPM_NAME_NORM}_GIT_URL" "${SPM_GIT_URL}" PARENT_SCOPE)
+    set("SPM_PKG_${SPM_NAME_NORM}_COMMIT" "${SPM_COMMIT}" PARENT_SCOPE)
+    set("SPM_PKG_${SPM_NAME_NORM}_CHECKOUT" "${_spm_checkout_mode}" PARENT_SCOPE)
 
     # Package directory + meta
     set(_spm_pkg_dir "${SPM_EXTERN_DIR}/${SPM_NAME}")
     set(_spm_meta "${_spm_pkg_dir}/.spm-meta.cmake")
-    set("SPM_PKG_${SPM_NAME_NORM}_DIR" "${_spm_pkg_dir}")
+    set("SPM_PKG_${SPM_NAME_NORM}_DIR" "${_spm_pkg_dir}" PARENT_SCOPE)
 
     # Read meta if present
     set(_spm_have_dir FALSE)
