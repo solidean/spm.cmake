@@ -33,8 +33,9 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/spm.cmake)
 spm_package(
     NAME spm.cmake
     GIT_URL https://github.com/solidean/spm.cmake.git
-    COMMIT ca5821b2b99a21be1b7dddad300e04cf0bf8bd40
+    COMMIT 946f1c3d769b3822764024847f85aa10953f5444
     UPDATE_REF main
+    NO_ADD_SUBDIRECTORY
 )
 
 # Modern C++23 standard-library alternative with sane defaults, strong checks, and no legacy baggage.

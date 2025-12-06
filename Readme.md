@@ -8,6 +8,10 @@
    `ma` is the default namespace for the project, should be 2-4 chars long
    the uppercased default namespace becomes the prefix for its cmake options
 
+In VS Code:
+
+* (if not auto) `Ctrl+Shift+P` -> `CMake: Configure` -> e.g. `Debug`
+
 
 ## Quickstart (New Library)
 

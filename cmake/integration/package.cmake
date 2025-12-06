@@ -123,7 +123,6 @@ function(spm_package)
     set("SPM_PKG_${SPM_NAME_NORM}_GIT_URL" "${SPM_GIT_URL}")
     set("SPM_PKG_${SPM_NAME_NORM}_COMMIT" "${SPM_COMMIT}")
     set("SPM_PKG_${SPM_NAME_NORM}_CHECKOUT" "${_spm_checkout_mode}")
-    # TODO: make checkout mode a cache variable as well
 
     # Package directory + meta
     set(_spm_pkg_dir "${SPM_EXTERN_DIR}/${SPM_NAME}")
@@ -305,16 +304,6 @@ function(spm_package)
             endif()
         endif()
 
-
-        # .gitignore policy:
-        # - WORKTREE & FULL: ignore everything from the outer repo.
-        # - VENDORED: no ignore; everything is tracked by outer repo.
-        if(NOT _spm_checkout_mode STREQUAL "VENDORED")
-            file(WRITE "${_spm_pkg_dir}/.gitignore" "*")
-        elseif(EXISTS "${_spm_pkg_dir}/.gitignore")
-            file(REMOVE "${_spm_pkg_dir}/.gitignore")
-        endif()
-
         # Write meta file for the realized state
         file(WRITE "${_spm_meta}"
             "set(SPM_META_NAME \"${SPM_NAME}\")\n"
@@ -322,6 +311,11 @@ function(spm_package)
             "set(SPM_META_COMMIT \"${SPM_COMMIT}\")\n"
             "set(SPM_META_CHECKOUT \"${_spm_checkout_mode}\")\n"
         )
+    endif()
+
+    # Track non-vendored packages for gitignore generation in spm_finalize
+    if(NOT _spm_checkout_mode STREQUAL "VENDORED")
+        set_property(GLOBAL APPEND PROPERTY SPM_NON_VENDORED_PACKAGES "${SPM_NAME}")
     endif()
 
     # Wire into the build, unless explicitly suppressed
