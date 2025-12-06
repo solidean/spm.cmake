@@ -36,11 +36,8 @@ function(spm_require)
     endif()
 
     # Derive a readable origin: path of the calling CMakeLists relative to the root
-    get_filename_component(
-        _spm_origin
-        "${CMAKE_CURRENT_LIST_FILE}"
-        RELATIVE "${CMAKE_SOURCE_DIR}"
-    )
+    get_filename_component(_this_dir "${CMAKE_CURRENT_LIST_FILE}" DIRECTORY)
+    file(RELATIVE_PATH _spm_origin "${CMAKE_SOURCE_DIR}" "${_this_dir}")
 
     # Normalize possibly-empty fields to avoid stray semicolons breaking the list
     set(_spm_name "${SPM_REQ_NAME}")
