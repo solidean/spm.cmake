@@ -10,6 +10,7 @@ endif()
 set(SPM_INTEGRATION_INCLUDED TRUE)
 
 include(${CMAKE_CURRENT_LIST_DIR}/common/helpers.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/common/git.cmake)
 
 include(${CMAKE_CURRENT_LIST_DIR}/integration/package.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/integration/require.cmake)

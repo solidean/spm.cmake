@@ -61,10 +61,10 @@ if(CMAKE_SCRIPT_MODE_FILE)
             message(FATAL_ERROR "SPM already initialized. extern/spm.cmake/spm.cmake already exists.")
         endif()
 
-        # Clone the SPM repository into the project's extern directory
+        # Shallow clone the SPM repository into the project's extern directory
         message(STATUS "Initializing SPM by cloning repository...")
         execute_process(
-            COMMAND git clone https://github.com/solidean/spm.cmake.git extern/spm.cmake
+            COMMAND git clone --depth 1 https://github.com/solidean/spm.cmake.git extern/spm.cmake
             WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}"
             RESULT_VARIABLE git_result
         )

@@ -10,6 +10,7 @@ endif()
 set(SPM_CLI_INCLUDED TRUE)
 
 include(${CMAKE_CURRENT_LIST_DIR}/common/helpers.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/common/git.cmake)
 
 # commands
 include(${CMAKE_CURRENT_LIST_DIR}/cli/apply_template.cmake)
