@@ -319,15 +319,24 @@ function(spm_git_checkout_full_repo_at cache_path repo_url commit_hash target_di
             WORKING_DIRECTORY "${target_dir}"
         )
 
-        # Add cache remote
-        spm_git_execute_or_fail("spm_git_checkout_full_repo_at(): git remote add cache"
-            COMMAND git remote add cache "${cache_path}"
-            WORKING_DIRECTORY "${target_dir}"
-        )
-
         # Add origin remote
         spm_git_execute_or_fail("spm_git_checkout_full_repo_at(): git remote add origin"
             COMMAND git remote add origin "${repo_url}"
+            WORKING_DIRECTORY "${target_dir}"
+        )
+    endif()
+
+    # Add cache remote if it doesn't exist
+    execute_process(
+        COMMAND git remote get-url cache
+        WORKING_DIRECTORY "${target_dir}"
+        RESULT_VARIABLE _has_cache_remote
+        OUTPUT_QUIET
+        ERROR_QUIET
+    )
+    if(NOT _has_cache_remote EQUAL 0)
+        spm_git_execute_or_fail("spm_git_checkout_full_repo_at(): git remote add cache"
+            COMMAND git remote add cache "${cache_path}"
             WORKING_DIRECTORY "${target_dir}"
         )
     endif()
