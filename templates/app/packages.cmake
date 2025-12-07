@@ -33,7 +33,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/spm.cmake)
 spm_package(
     NAME spm.cmake
     GIT_URL https://github.com/solidean/spm.cmake.git
-    COMMIT 946f1c3d769b3822764024847f85aa10953f5444
+    COMMIT 3daf094d3dc0db026c1f632603efd32bcb33c71c
     UPDATE_REF main
     NO_ADD_SUBDIRECTORY
 )
