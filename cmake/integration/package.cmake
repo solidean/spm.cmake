@@ -12,8 +12,8 @@
 #
 # Design:
 # - Each package lives in "${SPM_EXTERN_DIR}/${NAME}" (defaults to "${CMAKE_SOURCE_DIR}/extern").
-# - A ".spm-meta.cmake" file in that directory records the realized COMMIT and CHECKOUT mode.
-#   This lives *with the checkout*, so it is shared across build dirs and tools.
+# - A meta file at "${SPM_EXTERN_DIR}/.spm-meta/${NAME}.meta.cmake" records the realized
+#   COMMIT and CHECKOUT mode. This is shared across build dirs and tools.
 # - The "happy path" is fast: if the directory exists and meta matches the requested commit/mode,
 #   we do no git calls, only cheap filesystem/meta checks.
 # - Auto-update:
@@ -123,7 +123,8 @@ function(spm_package)
 
     # Package directory + meta
     set(_spm_pkg_dir "${SPM_EXTERN_DIR}/${SPM_NAME}")
-    set(_spm_meta "${_spm_pkg_dir}/.spm-meta.cmake")
+    set(_spm_meta_dir "${SPM_EXTERN_DIR}/.spm-meta")
+    set(_spm_meta "${_spm_meta_dir}/${SPM_NAME}.meta.cmake")
     set("SPM_PKG_${SPM_NAME_NORM}_DIR" "${_spm_pkg_dir}" PARENT_SCOPE)
 
     # Read meta if present
@@ -166,18 +167,25 @@ function(spm_package)
                     set(_spm_need_checkout TRUE)
                 endif()
             else()
-                # No meta: assume manually vendored, do not touch
-                message(STATUS
-                    "SPM: package '${SPM_NAME}' exists in '${_spm_pkg_dir}' "
-                    "without .spm-meta.cmake; assuming manually vendored. "
-                    "Switching back to NESTED checkout requires the SPM CLI.")
+                # No meta: check if it's vendored (no .git) or nested without meta
+                if(NOT EXISTS "${_spm_pkg_dir}/.git")
+                    # No .git: assume manually vendored, do not touch
+                    message(STATUS
+                        "SPM: package '${SPM_NAME}' exists in '${_spm_pkg_dir}' "
+                        "without .git directory; assuming manually vendored. "
+                        "Switching back to NESTED checkout requires the SPM CLI.")
+                else()
+                    # Has .git but no meta: assume nested repo, will create meta after checkout
+                    # Check if commit differs from what we want
+                    set(_spm_need_checkout TRUE)
+                endif()
             endif()
         elseif(_spm_checkout_mode STREQUAL "VENDORED")
             # Current mode is VENDORED
             if(_spm_have_meta)
                 # Previous checkout was NESTED; warn that CLI is required
                 message(WARNING
-                    "SPM: package '${SPM_NAME}' was previously NESTED (has .spm-meta.cmake) "
+                    "SPM: package '${SPM_NAME}' was previously NESTED (has meta file) "
                     "but is now requested as VENDORED. Switching from NESTED to VENDORED "
                     "requires the SPM CLI to ensure proper user intent. Skipping update.")
             endif()
@@ -209,19 +217,11 @@ function(spm_package)
         if(_spm_checkout_mode STREQUAL "NESTED")
             # Check if directory exists without .git (indicates it was vendored before)
             if(_spm_have_dir AND NOT EXISTS "${_spm_pkg_dir}/.git")
-                # Special case: spm.cmake itself during bootstrap doesn't have .spm-meta.cmake
-                set(_is_spm_cmake_bootstrap FALSE)
-                if(SPM_NAME STREQUAL "spm.cmake" AND NOT _spm_have_meta)
-                    set(_is_spm_cmake_bootstrap TRUE)
-                endif()
-
-                if(NOT _is_spm_cmake_bootstrap)
-                    message(WARNING
-                        "SPM: package '${SPM_NAME}' exists in '${_spm_pkg_dir}' "
-                        "without .git directory. This indicates it was previously VENDORED. "
-                        "Switching back to NESTED checkout requires the SPM CLI. Skipping update.")
-                    set(_spm_need_checkout FALSE)
-                endif()
+                message(WARNING
+                    "SPM: package '${SPM_NAME}' exists in '${_spm_pkg_dir}' "
+                    "without .git directory. This indicates it was previously VENDORED. "
+                    "Switching back to NESTED checkout requires the SPM CLI. Skipping update.")
+                set(_spm_need_checkout FALSE)
             endif()
 
             if(_spm_need_checkout)
@@ -256,6 +256,7 @@ function(spm_package)
                     spm_git_checkout_full_repo_at("${_spm_cache_path}" "${SPM_GIT_URL}" "${SPM_COMMIT}" "${_spm_pkg_dir}")
 
                     # Write meta file for the realized state
+                    file(MAKE_DIRECTORY "${_spm_meta_dir}")
                     file(WRITE "${_spm_meta}"
                         "set(SPM_META_NAME \"${SPM_NAME}\")\n"
                         "set(SPM_META_GIT_URL \"${SPM_GIT_URL}\")\n"
