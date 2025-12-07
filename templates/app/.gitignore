@@ -54,7 +54,7 @@ coverage/
 conan/
 vcpkg_installed/
 _deps/
-extern/.gitignore
+extern/.spm-meta
 
 # Generated documentation
 docs/html/
