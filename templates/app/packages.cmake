@@ -10,7 +10,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/spm.cmake)
 #       NAME    clean-core
 #       GIT_URL https://github.com/solidean/clean-core.git
 #       COMMIT  95634878ea373ec7ede212b77de7f5d407d0bb48
-#       [CHECKOUT WORKTREE|FULL|VENDORED]
+#       [CHECKOUT NESTED|VENDORED]
 #       [UPDATE_REF <branch>]
 #       [NO_ADD_SUBDIRECTORY]
 #   )
@@ -24,9 +24,8 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/spm.cmake)
 #   NO_ADD_SUBDIRECTORY: Skip calling add_subdirectory() for manual control
 #
 # Checkout modes:
-#   WORKTREE (default): snapshot of the tree at COMMIT, no .git directory
-#   FULL: full git checkout (nested repo), .git is kept
-#   VENDORED: snapshot without .git and without .gitignore, becomes part of main repo
+#   NESTED (default): full git checkout (nested repo) populated from local git cache, auto-updates when commit changes
+#   VENDORED: snapshot without .git, becomes part of main repo, managed manually (switching requires SPM CLI)
 #
 
 # Shaped Package Manager

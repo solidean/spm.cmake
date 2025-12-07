@@ -5,7 +5,7 @@
 #       NAME    clean-core
 #       GIT_URL https://github.com/project-arcana/clean-core.git
 #       COMMIT  dfc52ee09fe3da37638d8d7d0c6176c59a367562
-#       [CHECKOUT WORKTREE|FULL|VENDORED]
+#       [CHECKOUT NESTED|VENDORED]
 #       [UPDATE_REF <branch>]
 #       [NO_ADD_SUBDIRECTORY]
 #   )
@@ -17,19 +17,18 @@
 # - The "happy path" is fast: if the directory exists and meta matches the requested commit/mode,
 #   we do no git calls, only cheap filesystem/meta checks.
 # - Auto-update:
-#   * If COMMIT or CHECKOUT changes and both SPM_AUTO_UPDATE and
+#   * If COMMIT changes (for NESTED mode) and both SPM_AUTO_UPDATE and
 #     SPM_PKG_<PKG>_AUTO_UPDATE are ON, the package is re-realized.
-#   * WORKTREE/VENDORED: local changes are overwritten on update.
-#   * FULL: if the repo is dirty, auto-update fails with FATAL_ERROR to avoid
-#     destroying local work.
+#   * NESTED: if the repo is dirty, a warning is issued but configure continues
+#     without updating (to avoid data loss).
+#   * VENDORED: auto-update is not supported; switching requires the SPM CLI.
 # - Checkout modes:
-#   * WORKTREE (default): snapshot of the tree at COMMIT, no .git directory.
-#                         A .gitignore '*' is written so nothing under the package
-#                         is picked up by the outer git.
-#   * FULL: full git checkout (nested repo). .git is kept, but .gitignore '*' is also written so outer git ignores it. 
-#           Auto-update refuses to touch a dirty repo.
-#   * VENDORED: snapshot without .git and without .gitignore '*', so the package
-#               contents become part of the main repo history (“vendored” code).
+#   * NESTED (default): full git checkout (nested repo) populated from a local git cache.
+#                       Uses spm_get_repo_cache_path and related helpers to minimize network I/O.
+#                       Auto-update only if repo is clean.
+#   * VENDORED: snapshot without .git, contents become part of the main repo history.
+#               Switching from NESTED to VENDORED requires the SPM CLI.
+#               Once VENDORED, the package is managed manually.
 # - Names:
 #   * NAME must match ^[A-Za-z0-9_.-]+$.
 #   * Normalized name = uppercase, '-' and '.' replaced by '_'.
@@ -90,19 +89,17 @@ function(spm_package)
     endif()
     file(MAKE_DIRECTORY "${SPM_EXTERN_DIR}")
 
-    # Checkout mode: default WORKTREE; CHECKOUT argument can override.
-    set(_spm_checkout_mode "WORKTREE")
+    # Checkout mode: default NESTED; CHECKOUT argument can override.
+    set(_spm_checkout_mode "NESTED")
     if(SPM_CHECKOUT)
         string(TOUPPER "${SPM_CHECKOUT}" _spm_checkout_mode)
     endif()
-    if(NOT _spm_checkout_mode IN_LIST _spm_valid_modes)
-        set(_spm_valid_modes "WORKTREE" "FULL" "VENDORED")
-    endif()
+    set(_spm_valid_modes "NESTED" "VENDORED")
     list(FIND _spm_valid_modes "${_spm_checkout_mode}" _spm_mode_idx)
     if(_spm_mode_idx EQUAL -1)
         message(FATAL_ERROR
             "spm_package(${SPM_NAME}): invalid CHECKOUT='${SPM_CHECKOUT}'. "
-            "Allowed: WORKTREE, FULL, VENDORED.")
+            "Allowed: NESTED, VENDORED.")
     endif()
 
     # Global auto-update toggle
@@ -152,20 +149,39 @@ function(spm_package)
     endif()
 
     # Decide whether we need to (re)realize the package
-    set(_spm_need_fetch FALSE)
+    set(_spm_need_checkout FALSE)
     if(NOT _spm_have_dir)
-        set(_spm_need_fetch TRUE)
+        set(_spm_need_checkout TRUE)
     else()
-        if(_spm_have_meta)
-            if(NOT _spm_meta_commit STREQUAL "${SPM_COMMIT}"
-                OR NOT _spm_meta_mode STREQUAL "${_spm_checkout_mode}")
-                set(_spm_need_fetch TRUE)
+        # Determine if we need to re-checkout based on the new model:
+        # - NESTED→NESTED: only if commit changed
+        # - NESTED→VENDORED: skip (requires CLI)
+        # - VENDORED→NESTED: skip if no .spm-meta.cmake (means it was manually vendored)
+        # - VENDORED→VENDORED: never (manual management)
+
+        if(_spm_checkout_mode STREQUAL "NESTED")
+            if(_spm_have_meta)
+                # Previous checkout was NESTED (has meta)
+                if(NOT _spm_meta_commit STREQUAL "${SPM_COMMIT}")
+                    set(_spm_need_checkout TRUE)
+                endif()
+            else()
+                # No meta: assume manually vendored, do not touch
+                message(STATUS
+                    "SPM: package '${SPM_NAME}' exists in '${_spm_pkg_dir}' "
+                    "without .spm-meta.cmake; assuming manually vendored. "
+                    "Switching back to NESTED checkout requires the SPM CLI.")
             endif()
-        else()
-            # Directory exists but no meta: treat as manually managed, do not touch.
-            message(STATUS
-                "SPM: package '${SPM_NAME}' already exists in '${_spm_pkg_dir}' "
-                "without .spm-meta.cmake; leaving as-is (no auto-update).")
+        elseif(_spm_checkout_mode STREQUAL "VENDORED")
+            # Current mode is VENDORED
+            if(_spm_have_meta)
+                # Previous checkout was NESTED; warn that CLI is required
+                message(WARNING
+                    "SPM: package '${SPM_NAME}' was previously NESTED (has .spm-meta.cmake) "
+                    "but is now requested as VENDORED. Switching from NESTED to VENDORED "
+                    "requires the SPM CLI to ensure proper user intent. Skipping update.")
+            endif()
+            # VENDORED packages are never auto-updated
         endif()
     endif()
 
@@ -177,145 +193,79 @@ function(spm_package)
         endif()
     endif()
 
-    if(_spm_need_fetch AND NOT _spm_auto_allowed AND _spm_have_dir)
+    if(_spm_need_checkout AND NOT _spm_auto_allowed AND _spm_have_dir)
         message(STATUS
             "SPM: package '${SPM_NAME}' is out-of-date "
             "(have commit '${_spm_meta_commit}', mode '${_spm_meta_mode}'; "
             "want commit '${SPM_COMMIT}', mode '${_spm_checkout_mode}'), "
             "but auto-update is disabled (SPM_AUTO_UPDATE and/or "
             "${_spm_pkg_auto_var} are OFF). Keeping existing checkout.")
-        set(_spm_need_fetch FALSE)
+        set(_spm_need_checkout FALSE)
     endif()
 
     # Realize / update package
-    if(_spm_need_fetch)
-        if(_spm_have_dir AND NOT _spm_have_meta)
-            # Conservative: don't touch a foreign directory
-            message(FATAL_ERROR
-                "SPM: refusing to modify existing directory '${_spm_pkg_dir}' "
-                "for package '${SPM_NAME}' because it lacks .spm-meta.cmake. "
-                "Remove the directory or add meta manually.")
-        endif()
+    if(_spm_need_checkout)
+        # NESTED checkout mode
+        if(_spm_checkout_mode STREQUAL "NESTED")
+            # Check if directory exists without .git (indicates it was vendored before)
+            if(_spm_have_dir AND NOT EXISTS "${_spm_pkg_dir}/.git")
+                # Special case: spm.cmake itself during bootstrap doesn't have .spm-meta.cmake
+                set(_is_spm_cmake_bootstrap FALSE)
+                if(SPM_NAME STREQUAL "spm.cmake" AND NOT _spm_have_meta)
+                    set(_is_spm_cmake_bootstrap TRUE)
+                endif()
 
-        # FULL: if repo exists and is dirty, refuse to auto-update.
-        if(_spm_checkout_mode STREQUAL "FULL"
-            AND _spm_have_dir
-            AND EXISTS "${_spm_pkg_dir}/.git")
-            execute_process(
-                COMMAND git -C "${_spm_pkg_dir}" status --porcelain
-                OUTPUT_VARIABLE _spm_git_status
-                OUTPUT_STRIP_TRAILING_WHITESPACE
-            )
-            if(NOT "${_spm_git_status}" STREQUAL "")
-                message(FATAL_ERROR
-                    "SPM: cannot auto-update FULL checkout for '${SPM_NAME}' "
-                    "because the repository at '${_spm_pkg_dir}' is dirty.\n"
-                    "Commit/stash your changes or set "
-                    "${_spm_pkg_auto_var}=OFF to keep the current state.")
-            endif()
-        endif()
-
-        # For WORKTREE/VENDORED we just blow away the directory and recreate.
-        # For FULL we prefer in-place update if the dir exists, otherwise clone.
-        # TODO:
-        #   system for externally cached git repos
-        #   a global system cache with entries per repo
-        #   does shallow fetches + filtered fetched for ancestry
-        #   then copies over worktrees
-        #   "FULL" is then adding that as secondary remote and checkout out from there
-        if(_spm_checkout_mode STREQUAL "FULL")
-            if(NOT _spm_have_dir)
-                file(MAKE_DIRECTORY "${SPM_EXTERN_DIR}")
-                execute_process(
-                    COMMAND git clone "${SPM_GIT_URL}" "${_spm_pkg_dir}"
-                    RESULT_VARIABLE _spm_git_res
-                )
-                if(NOT _spm_git_res EQUAL 0)
-                    message(FATAL_ERROR "SPM: git clone failed for '${SPM_NAME}' from '${SPM_GIT_URL}'")
+                if(NOT _is_spm_cmake_bootstrap)
+                    message(WARNING
+                        "SPM: package '${SPM_NAME}' exists in '${_spm_pkg_dir}' "
+                        "without .git directory. This indicates it was previously VENDORED. "
+                        "Switching back to NESTED checkout requires the SPM CLI. Skipping update.")
+                    set(_spm_need_checkout FALSE)
                 endif()
             endif()
 
-            execute_process(
-                WORKING_DIRECTORY "${_spm_pkg_dir}"
-                COMMAND git fetch --all --tags
-                RESULT_VARIABLE _spm_git_res
-            )
-            if(NOT _spm_git_res EQUAL 0)
-                message(FATAL_ERROR "SPM: git fetch failed for '${SPM_NAME}' in '${_spm_pkg_dir}'")
-            endif()
+            if(_spm_need_checkout)
+                # Get repo cache directory
+                spm_get_repo_cache_path("${SPM_GIT_URL}" _spm_cache_path)
 
-            execute_process(
-                WORKING_DIRECTORY "${_spm_pkg_dir}"
-                COMMAND git checkout "${SPM_COMMIT}"
-                RESULT_VARIABLE _spm_git_res
-            )
-            if(NOT _spm_git_res EQUAL 0)
-                message(FATAL_ERROR "SPM: git checkout ${SPM_COMMIT} failed for '${SPM_NAME}'")
-            endif()
+                # Ensure cache repo is initialized
+                spm_ensure_cache_repo_is_initialized("${SPM_GIT_URL}" "${_spm_cache_path}")
 
-        else()
-            # WORKTREE or VENDORED: fresh snapshot of the tree at COMMIT.
-            if(_spm_have_dir)
-                file(REMOVE_RECURSE "${_spm_pkg_dir}")
-            endif()
+                # Ensure cache has the target commit
+                spm_ensure_cache_repo_has_commit("${_spm_cache_path}" "${SPM_COMMIT}")
 
-            # git init <dir>
-            execute_process(
-                COMMAND git init "${_spm_pkg_dir}"
-                RESULT_VARIABLE _spm_git_res
-            )
-            if(NOT _spm_git_res EQUAL 0)
-                message(FATAL_ERROR "SPM: git init failed for '${SPM_NAME}' in '${_spm_pkg_dir}'")
-            endif()
+                # Check if the target directory is dirty (if it exists with .git)
+                if(_spm_have_dir AND EXISTS "${_spm_pkg_dir}/.git")
+                    spm_git_is_dirty("${_spm_pkg_dir}" _spm_is_dirty)
+                    if(_spm_is_dirty)
+                        message(WARNING
+                            "SPM: package '${SPM_NAME}' at '${_spm_pkg_dir}' has uncommitted changes. "
+                            "Skipping checkout to avoid data loss. Configure will continue with current state. "
+                            "Commit/stash your changes or set ${_spm_pkg_auto_var}=OFF to suppress this warning.")
+                        set(_spm_need_checkout FALSE)
+                    endif()
+                endif()
 
-            # git remote add origin <url>
-            execute_process(
-                WORKING_DIRECTORY "${_spm_pkg_dir}"
-                COMMAND git remote add origin "${SPM_GIT_URL}"
-                RESULT_VARIABLE _spm_git_res
-            )
-            if(NOT _spm_git_res EQUAL 0)
-                message(FATAL_ERROR "SPM: git remote add origin failed for '${SPM_NAME}' from '${SPM_GIT_URL}'")
-            endif()
+                if(_spm_need_checkout)
+                    # Create directory if it doesn't exist
+                    if(NOT _spm_have_dir)
+                        file(MAKE_DIRECTORY "${_spm_pkg_dir}")
+                    endif()
 
-            # git fetch --depth 1 origin <commit>
-            execute_process(
-                WORKING_DIRECTORY "${_spm_pkg_dir}"
-                COMMAND git fetch --depth 1 origin "${SPM_COMMIT}"
-                RESULT_VARIABLE _spm_git_res
-            )
-            if(NOT _spm_git_res EQUAL 0)
-                message(FATAL_ERROR "SPM: git fetch --depth 1 origin ${SPM_COMMIT} failed for '${SPM_NAME}'")
-            endif()
+                    # Checkout from cache
+                    spm_git_checkout_full_repo_at("${_spm_cache_path}" "${SPM_GIT_URL}" "${SPM_COMMIT}" "${_spm_pkg_dir}")
 
-            # git checkout <commit>
-            execute_process(
-                WORKING_DIRECTORY "${_spm_pkg_dir}"
-                COMMAND git checkout "${SPM_COMMIT}"
-                RESULT_VARIABLE _spm_git_res
-            )
-            if(NOT _spm_git_res EQUAL 0)
-                message(FATAL_ERROR "SPM: git checkout ${SPM_COMMIT} failed for '${SPM_NAME}'")
-            endif()
-
-            # Drop .git for WORKTREE/VENDORED
-            if(EXISTS "${_spm_pkg_dir}/.git")
-                file(REMOVE_RECURSE "${_spm_pkg_dir}/.git")
+                    # Write meta file for the realized state
+                    file(WRITE "${_spm_meta}"
+                        "set(SPM_META_NAME \"${SPM_NAME}\")\n"
+                        "set(SPM_META_GIT_URL \"${SPM_GIT_URL}\")\n"
+                        "set(SPM_META_COMMIT \"${SPM_COMMIT}\")\n"
+                        "set(SPM_META_CHECKOUT \"${_spm_checkout_mode}\")\n"
+                    )
+                endif()
             endif()
         endif()
-
-        # Write meta file for the realized state
-        file(WRITE "${_spm_meta}"
-            "set(SPM_META_NAME \"${SPM_NAME}\")\n"
-            "set(SPM_META_GIT_URL \"${SPM_GIT_URL}\")\n"
-            "set(SPM_META_COMMIT \"${SPM_COMMIT}\")\n"
-            "set(SPM_META_CHECKOUT \"${_spm_checkout_mode}\")\n"
-        )
-    endif()
-
-    # Track non-vendored packages for gitignore generation in spm_finalize
-    if(NOT _spm_checkout_mode STREQUAL "VENDORED")
-        set_property(GLOBAL APPEND PROPERTY SPM_NON_VENDORED_PACKAGES "${SPM_NAME}")
+        # VENDORED mode: we've already handled this above (never auto-update)
     endif()
 
     # Wire into the build, unless explicitly suppressed
