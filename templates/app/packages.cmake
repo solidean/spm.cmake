@@ -29,6 +29,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/spm.cmake)
 #   VENDORED: snapshot without .git and without .gitignore, becomes part of main repo
 #
 
+
 # Shaped Package Manager
 spm_package(
     NAME spm.cmake
@@ -45,6 +46,15 @@ spm_package(
     COMMIT 7cb6f36bc70d54cc16438dfe1b4765b653203195
     UPDATE_REF main
 )
+
+# Unified test, fuzz, benchmark, and app runner for modern C++.
+spm_package(
+    NAME nexus
+    GIT_URL https://github.com/solidean/nexus.git
+    COMMIT f16c5e5052487321a92451c56a41021cdef76148
+    UPDATE_REF main
+)
+
 
 # =========================
 # Packages end
