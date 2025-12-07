@@ -125,6 +125,10 @@ function(spm_ensure_cache_repo_is_initialized repo_url cache_path)
     # Note: git init --bare creates the directory, so we use parent dir as working dir
     get_filename_component(_parent_dir "${cache_path}" DIRECTORY)
     get_filename_component(_dir_name "${cache_path}" NAME)
+
+    # Ensure parent directory exists
+    file(MAKE_DIRECTORY "${_parent_dir}")
+
     spm_git_execute_or_fail("spm_ensure_cache_repo_is_initialized(): git init --bare"
         COMMAND git init --bare "${_dir_name}"
         WORKING_DIRECTORY "${_parent_dir}"
@@ -149,30 +153,43 @@ endfunction()
 #      'git fetch --no-filter origin <commit_hash>'
 #
 function(spm_ensure_cache_repo_has_commit cache_path commit_hash)
-    # Check for missing objects
-    spm_git_execute_or_fail("spm_ensure_cache_repo_has_commit(): git rev-list"
-        COMMAND git rev-list --objects --missing=print "${commit_hash}" --
+    # Check if the commit object itself is known
+    execute_process(
+        COMMAND git cat-file -e "${commit_hash}^{commit}"
         WORKING_DIRECTORY "${cache_path}"
-        OUTPUT_VARIABLE _git_output
+        RESULT_VARIABLE _git_has_commit
+        OUTPUT_QUIET
+        ERROR_QUIET
     )
 
-    # Check if any objects are missing (lines starting with '?')
-    string(REGEX MATCH "\\?" _has_missing "${_git_output}")
-
-    if(_has_missing)
-        # Fetch missing objects
-        spm_git_execute_or_fail("spm_ensure_cache_repo_has_commit(): git fetch"
-            COMMAND git fetch --no-filter origin "${commit_hash}"
+    if(_git_has_commit EQUAL 0)
+        # Commit exists, check if all objects are present
+        spm_git_execute_or_fail("spm_ensure_cache_repo_has_commit(): git rev-list"
+            COMMAND git rev-list --objects --missing=print "${commit_hash}" --
             WORKING_DIRECTORY "${cache_path}"
+            OUTPUT_VARIABLE _git_output
         )
+
+        # Check if any objects are missing (lines starting with '?')
+        string(REGEX MATCH "\\?" _has_missing "${_git_output}")
+
+        if(NOT _has_missing)
+            # Everything is present, early return
+            return()
+        endif()
     endif()
+
+    # Fetch missing objects (either commit is missing or some objects are missing)
+    spm_git_execute_or_fail("spm_ensure_cache_repo_has_commit(): git fetch"
+        COMMAND git fetch --no-filter origin "${commit_hash}"
+        WORKING_DIRECTORY "${cache_path}"
+    )
 endfunction()
 
-# spm_git_is_ancestor(<cache_path> <hash-a> <hash-b> <out-var>)
+# spm_git_is_ancestor(<repo_url> <hash-a> <hash-b> <out-var>)
 #
-# Checks whether commit <hash-a> is an ancestor of <hash-b> inside the
-# repository located at <cache_path>. Writes the result ("TRUE"/"FALSE")
-# to <out-var>.
+# Checks whether commit <hash-a> is an ancestor of <hash-b> in the repository
+# identified by <repo_url>. Writes the result ("TRUE"/"FALSE") to <out-var>.
 #
 # To avoid repeated git calls, results are memoized using INTERNAL
 # cache variables named:
@@ -189,17 +206,24 @@ endfunction()
 # `cmake -L`, but still persists them across configure runs. Since the DAG
 # never changes for a given commit hash, the cached result never goes stale.
 #
-function(spm_git_is_ancestor cache_path hash_a hash_b out_var)
+# This function uses the git cache repository for efficient operation.
+#
+function(spm_git_is_ancestor repo_url hash_a hash_b out_var)
     set(_cache_key "SPM_GIT_IS_ANCESTOR_${hash_a}_${hash_b}")
 
+    # Early out: check if result is already cached
     if(DEFINED ${_cache_key})
         set(${out_var} "${${_cache_key}}" PARENT_SCOPE)
         return()
     endif()
 
+    # Get and initialize cache repository
+    spm_get_repo_cache_path("${repo_url}" _cache_path)
+    spm_ensure_cache_repo_is_initialized("${repo_url}" "${_cache_path}")
+
     execute_process(
         COMMAND git merge-base --is-ancestor "${hash_a}" "${hash_b}"
-        WORKING_DIRECTORY "${cache_path}"
+        WORKING_DIRECTORY "${_cache_path}"
         RESULT_VARIABLE _git_result
         OUTPUT_QUIET
         ERROR_QUIET
@@ -211,16 +235,16 @@ function(spm_git_is_ancestor cache_path hash_a hash_b out_var)
         set(_value FALSE)
     else()
         # Non-0/1 result might indicate missing commits in cache repo
-        # Try fetching the commits and retry once
+        # Fetch the commits using tree:0 filter for performance
         spm_git_execute_or_fail("spm_git_is_ancestor(): git fetch"
             COMMAND git fetch --filter=tree:0 origin "${hash_a}" "${hash_b}"
-            WORKING_DIRECTORY "${cache_path}"
+            WORKING_DIRECTORY "${_cache_path}"
         )
 
         # Retry the ancestor check
         execute_process(
             COMMAND git merge-base --is-ancestor "${hash_a}" "${hash_b}"
-            WORKING_DIRECTORY "${cache_path}"
+            WORKING_DIRECTORY "${_cache_path}"
             RESULT_VARIABLE _git_result
             OUTPUT_QUIET
             ERROR_QUIET
@@ -233,7 +257,8 @@ function(spm_git_is_ancestor cache_path hash_a hash_b out_var)
         else()
             message(FATAL_ERROR
                 "spm_git_is_ancestor(): git merge-base failed\n"
-                "  cache_path : ${cache_path}\n"
+                "  repo_url   : ${repo_url}\n"
+                "  cache_path : ${_cache_path}\n"
                 "  A          : ${hash_a}\n"
                 "  B          : ${hash_b}\n"
                 "Exit code: ${_git_result}"
@@ -294,15 +319,24 @@ function(spm_git_checkout_full_repo_at cache_path repo_url commit_hash target_di
             WORKING_DIRECTORY "${target_dir}"
         )
 
-        # Add cache remote
-        spm_git_execute_or_fail("spm_git_checkout_full_repo_at(): git remote add cache"
-            COMMAND git remote add cache "${cache_path}"
-            WORKING_DIRECTORY "${target_dir}"
-        )
-
         # Add origin remote
         spm_git_execute_or_fail("spm_git_checkout_full_repo_at(): git remote add origin"
             COMMAND git remote add origin "${repo_url}"
+            WORKING_DIRECTORY "${target_dir}"
+        )
+    endif()
+
+    # Add cache remote if it doesn't exist
+    execute_process(
+        COMMAND git remote get-url cache
+        WORKING_DIRECTORY "${target_dir}"
+        RESULT_VARIABLE _has_cache_remote
+        OUTPUT_QUIET
+        ERROR_QUIET
+    )
+    if(NOT _has_cache_remote EQUAL 0)
+        spm_git_execute_or_fail("spm_git_checkout_full_repo_at(): git remote add cache"
+            COMMAND git remote add cache "${cache_path}"
             WORKING_DIRECTORY "${target_dir}"
         )
     endif()
