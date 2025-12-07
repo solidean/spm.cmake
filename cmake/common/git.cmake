@@ -390,3 +390,38 @@ function(spm_git_is_dirty repo_path out_var)
     set(${out_var} "${_is_dirty}" PARENT_SCOPE)
 endfunction()
 
+# spm_git_is_detached(<repo_path> <out_var>)
+#
+# Checks whether the git repository at <repo_path> is in a detached HEAD state.
+# Writes the result ("TRUE"/"FALSE") to <out_var>.
+#
+# This uses 'git symbolic-ref -q HEAD' which checks if HEAD is a symbolic
+# reference to a branch. The exit codes are:
+#   0 => HEAD is a symbolic reference (not detached)
+#   1 => HEAD is not a symbolic reference (detached HEAD state)
+#   other => error (e.g., not a git repository)
+#
+function(spm_git_is_detached repo_path out_var)
+    execute_process(
+        COMMAND git symbolic-ref -q HEAD
+        WORKING_DIRECTORY "${repo_path}"
+        RESULT_VARIABLE _git_result
+        OUTPUT_QUIET
+        ERROR_QUIET
+    )
+
+    if(_git_result EQUAL 0)
+        set(_is_detached FALSE)
+    elseif(_git_result EQUAL 1)
+        set(_is_detached TRUE)
+    else()
+        message(FATAL_ERROR
+            "spm_git_is_detached(): git symbolic-ref failed\n"
+            "  repo_path: ${repo_path}\n"
+            "Exit code: ${_git_result}"
+        )
+    endif()
+
+    set(${out_var} "${_is_detached}" PARENT_SCOPE)
+endfunction()
+

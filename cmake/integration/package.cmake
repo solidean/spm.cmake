@@ -21,6 +21,9 @@
 #     SPM_PKG_<PKG>_AUTO_UPDATE are ON, the package is re-realized.
 #   * NESTED: if the repo is dirty, a warning is issued but configure continues
 #     without updating (to avoid data loss).
+#   * NESTED: if the repo is on a branch (not detached HEAD), a warning is issued
+#     and configure continues without updating. This allows developers to manually
+#     switch nested packages to a branch for development work.
 #   * VENDORED: auto-update is not supported; switching requires the SPM CLI.
 # - Checkout modes:
 #   * NESTED (default): full git checkout (nested repo) populated from a local git cache.
@@ -242,6 +245,18 @@ function(spm_package)
                             "SPM: package '${SPM_NAME}' at '${_spm_pkg_dir}' has uncommitted changes. "
                             "Skipping checkout to avoid data loss. Configure will continue with current state. "
                             "Commit/stash your changes or set ${_spm_pkg_auto_var}=OFF to suppress this warning.")
+                        set(_spm_need_checkout FALSE)
+                    endif()
+                endif()
+
+                # Check if the target directory is on a branch (user-overridden checkout)
+                if(_spm_need_checkout AND _spm_have_dir AND EXISTS "${_spm_pkg_dir}/.git")
+                    spm_git_is_detached("${_spm_pkg_dir}" _spm_is_detached)
+                    if(NOT _spm_is_detached)
+                        message(WARNING
+                            "SPM: package '${SPM_NAME}' at '${_spm_pkg_dir}' is on a branch (not detached HEAD). "
+                            "This indicates a user-overridden checkout for development. "
+                            "Skipping automatic checkout. Set ${_spm_pkg_auto_var}=OFF to suppress this warning.")
                         set(_spm_need_checkout FALSE)
                     endif()
                 endif()

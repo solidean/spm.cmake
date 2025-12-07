@@ -27,6 +27,11 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/spm.cmake)
 #   NESTED (default): full git checkout (nested repo) populated from local git cache, auto-updates when commit changes
 #   VENDORED: snapshot without .git, becomes part of main repo, managed manually (switching requires SPM CLI)
 #
+# Development tip:
+#   To work on a nested package, switch it to a branch (e.g., git checkout -b my-feature).
+#   SPM will detect the branch checkout and skip auto-updates, allowing you to develop freely.
+#   When done, either merge your changes or switch back to detached HEAD state.
+#
 
 
 # Shaped Package Manager
