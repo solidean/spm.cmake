@@ -40,3 +40,9 @@ target_include_directories(@PROJECT_SLUG@
     PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/src"
 )
+
+# Link against its own dependencies (provided by user or spm)
+target_link_directories(@PROJECT_SLUG@
+    PUBLIC
+    clean-core
+)
