@@ -30,4 +30,5 @@ target_include_directories(@PROJECT_SLUG@
 target_link_libraries(@PROJECT_SLUG@
     PRIVATE
     clean-core
+    nexus
 )
