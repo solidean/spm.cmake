@@ -3,12 +3,30 @@
     "clangd.arguments": [],
     // disable intelliSense since we want to use clangd
     "C_Cpp.intelliSenseEngine": "disabled",
-    "cmake.configureOnOpen": false,
+    // our cmake is fast enough
+    "cmake.configureOnOpen": true,
     // copy compile commands to workspace root folder for clangd
     "cmake.copyCompileCommands": "${workspaceFolder}/compile_commands.json",
-    "editor.formatOnSave": true,
+    // personal taste: change if you like
+    "editor.formatOnSave": false,
+    // ensure clangd uses clang-format to format your documents
     "[cpp]": {
         "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd"
     },
     "dotnet.defaultSolution": "disable",
+    // testmate grouping -> we use "category name - test name" as pattern
+    "testMate.cpp.test.advancedExecutables": [
+        {
+            "pattern": "{build,Build,BUILD,out,Out,OUT}/**/*{test,Test,TEST}*",
+            "catch2": {
+                "testGrouping": {
+                    "groupByExecutable": {
+                        "groupBySplittedTestName": {
+                            "splitBy": " - "
+                        }
+                    }
+                }
+            }
+        }
+    ],
 }
