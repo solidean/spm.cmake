@@ -1,52 +1,52 @@
 # spm_package
 #
 # Usage:
-#   spm_package(
-#       NAME    clean-core
-#       GIT_URL https://github.com/project-arcana/clean-core.git
-#       COMMIT  dfc52ee09fe3da37638d8d7d0c6176c59a367562
-#       [CHECKOUT NESTED|VENDORED]
-#       [UPDATE_REF <branch>]
-#       [NO_ADD_SUBDIRECTORY]
-#   )
+# spm_package(
+# NAME    clean-core
+# GIT_URL https://github.com/project-arcana/clean-core.git
+# COMMIT  dfc52ee09fe3da37638d8d7d0c6176c59a367562
+# [CHECKOUT NESTED|VENDORED]
+# [UPDATE_REF <branch>]
+# [NO_ADD_SUBDIRECTORY]
+# )
 #
 # Design:
 # - Each package lives in "${SPM_EXTERN_DIR}/${NAME}" (defaults to "${CMAKE_SOURCE_DIR}/extern").
 # - A meta file at "${SPM_EXTERN_DIR}/.spm-meta/${NAME}.meta.cmake" records the realized
-#   COMMIT and CHECKOUT mode. This is shared across build dirs and tools.
+# COMMIT and CHECKOUT mode. This is shared across build dirs and tools.
 # - The "happy path" is fast: if the directory exists and meta matches the requested commit/mode,
-#   we do no git calls, only cheap filesystem/meta checks.
+# we do no git calls, only cheap filesystem/meta checks.
 # - Auto-update:
-#   * If COMMIT changes (for NESTED mode) and both SPM_AUTO_UPDATE and
-#     SPM_PKG_<PKG>_AUTO_UPDATE are ON, the package is re-realized.
-#   * NESTED: if the repo is dirty, a warning is issued but configure continues
-#     without updating (to avoid data loss).
-#   * NESTED: if the repo is on a branch (not detached HEAD), a warning is issued
-#     and configure continues without updating. This allows developers to manually
-#     switch nested packages to a branch for development work.
-#   * VENDORED: auto-update is not supported; switching requires the SPM CLI.
+# * If COMMIT changes (for NESTED mode) and both SPM_AUTO_UPDATE and
+# SPM_PKG_<PKG>_AUTO_UPDATE are ON, the package is re-realized.
+# * NESTED: if the repo is dirty, a warning is issued but configure continues
+# without updating (to avoid data loss).
+# * NESTED: if the repo is on a branch (not detached HEAD), a warning is issued
+# and configure continues without updating. This allows developers to manually
+# switch nested packages to a branch for development work.
+# * VENDORED: auto-update is not supported; switching requires the SPM CLI.
 # - Checkout modes:
-#   * NESTED (default): full git checkout (nested repo) populated from a local git cache.
-#                       Uses spm_get_repo_cache_path and related helpers to minimize network I/O.
-#                       Auto-update only if repo is clean.
-#   * VENDORED: snapshot without .git, contents become part of the main repo history.
-#               Switching from NESTED to VENDORED requires the SPM CLI.
-#               Once VENDORED, the package is managed manually.
+# * NESTED (default): full git checkout (nested repo) populated from a local git cache.
+# Uses spm_get_repo_cache_path and related helpers to minimize network I/O.
+# Auto-update only if repo is clean.
+# * VENDORED: snapshot without .git, contents become part of the main repo history.
+# Switching from NESTED to VENDORED requires the SPM CLI.
+# Once VENDORED, the package is managed manually.
 # - Names:
-#   * NAME must match ^[A-Za-z0-9_.-]+$.
-#   * Normalized name = uppercase, '-' and '.' replaced by '_'.
-#   * There must not be two packages with the same normalized name
-#     (e.g. clean-core and CLEAN_CORE); that's a hard error.
+# * NAME must match ^[A-Za-z0-9_.-]+$.
+# * Normalized name = uppercase, '-' and '.' replaced by '_'.
+# * There must not be two packages with the same normalized name
+# (e.g. clean-core and CLEAN_CORE); that's a hard error.
 # - Control & speed:
-#   * Global toggle: SPM_AUTO_UPDATE (CACHE BOOL, default ON).
-#   * Per-package toggle: SPM_PKG_<PKG>_AUTO_UPDATE (CACHE BOOL, default ON).
-#   * Non-cache vars record requested state:
-#       SPM_PKG_<PKG>_GIT_URL
-#       SPM_PKG_<PKG>_COMMIT
-#       SPM_PKG_<PKG>_CHECKOUT
-#       SPM_PKG_<PKG>_DIR
-#   * Optional NO_ADD_SUBDIRECTORY lets you control when/if the package
-#     is wired into the CMake target graph.
+# * Global toggle: SPM_AUTO_UPDATE (CACHE BOOL, default ON).
+# * Per-package toggle: SPM_PKG_<PKG>_AUTO_UPDATE (CACHE BOOL, default ON).
+# * Non-cache vars record requested state:
+# SPM_PKG_<PKG>_GIT_URL
+# SPM_PKG_<PKG>_COMMIT
+# SPM_PKG_<PKG>_CHECKOUT
+# SPM_PKG_<PKG>_DIR
+# * Optional NO_ADD_SUBDIRECTORY lets you control when/if the package
+# is wired into the CMake target graph.
 #
 function(spm_package)
     if(NOT SPM_ENABLED)
@@ -60,9 +60,11 @@ function(spm_package)
     if(NOT SPM_NAME)
         message(FATAL_ERROR "spm_package: NAME is required")
     endif()
+
     if(NOT SPM_GIT_URL)
         message(FATAL_ERROR "spm_package(${SPM_NAME}): GIT_URL is required")
     endif()
+
     if(NOT SPM_COMMIT)
         message(FATAL_ERROR "spm_package(${SPM_NAME}): COMMIT is required")
     endif()
@@ -90,15 +92,19 @@ function(spm_package)
     if(NOT DEFINED SPM_EXTERN_DIR)
         set(SPM_EXTERN_DIR "${CMAKE_SOURCE_DIR}/extern")
     endif()
+
     file(MAKE_DIRECTORY "${SPM_EXTERN_DIR}")
 
     # Checkout mode: default NESTED; CHECKOUT argument can override.
     set(_spm_checkout_mode "NESTED")
+
     if(SPM_CHECKOUT)
         string(TOUPPER "${SPM_CHECKOUT}" _spm_checkout_mode)
     endif()
+
     set(_spm_valid_modes "NESTED" "VENDORED")
     list(FIND _spm_valid_modes "${_spm_checkout_mode}" _spm_mode_idx)
+
     if(_spm_mode_idx EQUAL -1)
         message(FATAL_ERROR
             "spm_package(${SPM_NAME}): invalid CHECKOUT='${SPM_CHECKOUT}'. "
@@ -113,6 +119,7 @@ function(spm_package)
 
     # Per-package auto-update toggle
     set(_spm_pkg_auto_var "SPM_PKG_${SPM_NAME_NORM}_AUTO_UPDATE")
+
     if(NOT DEFINED ${_spm_pkg_auto_var})
         set(${_spm_pkg_auto_var} ON CACHE BOOL
             "Auto-update SPM package ${SPM_NAME} when COMMIT/CHECKOUT changes")
@@ -135,18 +142,23 @@ function(spm_package)
     set(_spm_have_meta FALSE)
     set(_spm_meta_commit "")
     set(_spm_meta_mode "")
+
     if(EXISTS "${_spm_pkg_dir}")
         set(_spm_have_dir TRUE)
     endif()
+
     if(EXISTS "${_spm_meta}")
         set(_spm_have_meta TRUE)
+
         # Clear old values then include
         unset(SPM_META_COMMIT)
         unset(SPM_META_CHECKOUT)
         include("${_spm_meta}")
+
         if(DEFINED SPM_META_COMMIT)
             set(_spm_meta_commit "${SPM_META_COMMIT}")
         endif()
+
         if(DEFINED SPM_META_CHECKOUT)
             set(_spm_meta_mode "${SPM_META_CHECKOUT}")
         endif()
@@ -154,6 +166,7 @@ function(spm_package)
 
     # Decide whether we need to (re)realize the package
     set(_spm_need_checkout FALSE)
+
     if(NOT _spm_have_dir)
         set(_spm_need_checkout TRUE)
     else()
@@ -162,7 +175,6 @@ function(spm_package)
         # - NESTED→VENDORED: skip (requires CLI)
         # - VENDORED→NESTED: skip if no .spm-meta.cmake (means it was manually vendored)
         # - VENDORED→VENDORED: never (manual management)
-
         if(_spm_checkout_mode STREQUAL "NESTED")
             if(_spm_have_meta)
                 # Previous checkout was NESTED (has meta)
@@ -192,12 +204,14 @@ function(spm_package)
                     "but is now requested as VENDORED. Switching from NESTED to VENDORED "
                     "requires the SPM CLI to ensure proper user intent. Skipping update.")
             endif()
+
             # VENDORED packages are never auto-updated
         endif()
     endif()
 
     # Check auto-update settings
     set(_spm_auto_allowed FALSE)
+
     if(SPM_AUTO_UPDATE)
         if(${_spm_pkg_auto_var})
             set(_spm_auto_allowed TRUE)
@@ -237,26 +251,25 @@ function(spm_package)
                 # Ensure cache has the target commit
                 spm_ensure_cache_repo_has_commit("${_spm_cache_path}" "${SPM_COMMIT}")
 
+                # Check if the target directory is on a branch (user-overridden checkout)
+                if(_spm_need_checkout AND _spm_have_dir AND EXISTS "${_spm_pkg_dir}/.git")
+                    spm_git_is_detached("${_spm_pkg_dir}" _spm_is_detached)
+
+                    if(NOT _spm_is_detached)
+                        message(STATUS "SPM: package '${SPM_NAME}' is on a branch for development, skipping automatic checkout")
+                        set(_spm_need_checkout FALSE)
+                    endif()
+                endif()
+
                 # Check if the target directory is dirty (if it exists with .git)
-                if(_spm_have_dir AND EXISTS "${_spm_pkg_dir}/.git")
+                if(_spm_need_checkout AND _spm_have_dir AND EXISTS "${_spm_pkg_dir}/.git")
                     spm_git_is_dirty("${_spm_pkg_dir}" _spm_is_dirty)
+
                     if(_spm_is_dirty)
                         message(WARNING
                             "SPM: package '${SPM_NAME}' at '${_spm_pkg_dir}' has uncommitted changes. "
                             "Skipping checkout to avoid data loss. Configure will continue with current state. "
                             "Commit/stash your changes or set ${_spm_pkg_auto_var}=OFF to suppress this warning.")
-                        set(_spm_need_checkout FALSE)
-                    endif()
-                endif()
-
-                # Check if the target directory is on a branch (user-overridden checkout)
-                if(_spm_need_checkout AND _spm_have_dir AND EXISTS "${_spm_pkg_dir}/.git")
-                    spm_git_is_detached("${_spm_pkg_dir}" _spm_is_detached)
-                    if(NOT _spm_is_detached)
-                        message(WARNING
-                            "SPM: package '${SPM_NAME}' at '${_spm_pkg_dir}' is on a branch (not detached HEAD). "
-                            "This indicates a user-overridden checkout for development. "
-                            "Skipping automatic checkout. Set ${_spm_pkg_auto_var}=OFF to suppress this warning.")
                         set(_spm_need_checkout FALSE)
                     endif()
                 endif()
@@ -281,6 +294,7 @@ function(spm_package)
                 endif()
             endif()
         endif()
+
         # VENDORED mode: we've already handled this above (never auto-update)
     endif()
 
@@ -291,6 +305,7 @@ function(spm_package)
                 "SPM: package '${SPM_NAME}' in '${_spm_pkg_dir}' has no "
                 "CMakeLists.txt; cannot add_subdirectory.")
         endif()
+
         add_subdirectory("${_spm_pkg_dir}")
     endif()
 endfunction()
