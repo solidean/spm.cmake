@@ -24,6 +24,8 @@ Checks: >-
   -readability-convert-member-functions-to-static,
   -readability-named-parameter,
   -readability-magic-numbers,
+  -readability-avoid-nested-conditional-operator,
+  -readability-simplify-boolean-expr,
   modernize-*,
   -modernize-use-trailing-return-type,
   misc-*,
@@ -39,6 +41,7 @@ Checks: >-
   -cppcoreguidelines-avoid-c-arrays,
   -cppcoreguidelines-macro-usage,
   -cppcoreguidelines-avoid-non-const-global-variables,
+  -cppcoreguidelines-missing-std-forward,
   performance-*,
   -performance-enum-size
 
@@ -51,6 +54,7 @@ Checks: >-
 # -cppcoreguidelines-avoid-const-or-ref-data-members: We use reference members where appropriate
 # -cppcoreguidelines-avoid-c-arrays: Allow for legacy code and simple local arrays
 # -cppcoreguidelines-macro-usage: Allow TEST() and other testing framework macros
+# -cppcoreguidelines-missing-std-forward: We use cc::forward, which is not recognized by clang-tidy
 
 # Don't treat warnings as errors - allow incremental improvement
 # Exception: Critical warnings that must be errors
