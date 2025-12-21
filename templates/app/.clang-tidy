@@ -13,6 +13,7 @@ Checks: >-
   -bugprone-chained-comparison,
   -bugprone-macro-parentheses,
   -bugprone-sizeof-container,
+  -bugprone-sizeof-expression,
   readability-*,
   -readability-identifier-length,
   -readability-braces-around-statements,
@@ -28,6 +29,7 @@ Checks: >-
   -readability-simplify-boolean-expr,
   modernize-*,
   -modernize-use-trailing-return-type,
+  -modernize-avoid-c-arrays,
   misc-*,
   -misc-use-anonymous-namespace,
   -misc-non-private-member-variables-in-classes,
@@ -48,6 +50,7 @@ Checks: >-
 # Disabled checks rationale:
 # -bugprone-chained-comparison: Triggers on Catch2 CHECK macro, re-enable after updating
 # -bugprone-macro-parentheses: Incompatible with CHECK/REQUIRE macros using spaceship operator
+# -bugprone-sizeof-expression: Used intentionally for completeness checks (e.g., sizeof comparison)
 # -readability-redundant-access-specifiers: We use these intentionally for grouping
 # -misc-non-private-member-variables-in-classes: clang-tidy 21 confuses structs and classes; we want public members in structs
 # -cppcoreguidelines-avoid-magic-numbers: Too strict, flags obvious constants
@@ -74,25 +77,25 @@ CheckOptions:
   - key: readability-identifier-naming.ClassCase
     value: CamelCase
 
-  # Structs: snake_case
+  # Structs: lower_case
   - key: readability-identifier-naming.StructCase
-    value: snake_case
+    value: lower_case
   - key: readability-identifier-naming.StructIgnoredRegexp
     value: "^$"
 
-  # Enums: snake_case
+  # Enums: lower_case
   - key: readability-identifier-naming.EnumCase
-    value: snake_case
+    value: lower_case
   - key: readability-identifier-naming.EnumConstantCase
-    value: snake_case
+    value: lower_case
 
-  # Functions: snake_case
+  # Functions: lower_case
   - key: readability-identifier-naming.FunctionCase
-    value: snake_case
+    value: lower_case
 
-  # Variables: snake_case
+  # Variables: lower_case
   - key: readability-identifier-naming.VariableCase
-    value: snake_case
+    value: lower_case
 
   # Member Variables: Leading underscore for private/protected members
   - key: readability-identifier-naming.PrivateMemberPrefix
@@ -100,13 +103,13 @@ CheckOptions:
   - key: readability-identifier-naming.ProtectedMemberPrefix
     value: '_'
 
-  # Constants: snake_case
+  # Constants: lower_case
   - key: readability-identifier-naming.ConstantCase
-    value: snake_case
+    value: lower_case
   - key: readability-identifier-naming.GlobalConstantCase
-    value: snake_case
+    value: lower_case
   - key: readability-identifier-naming.StaticConstantCase
-    value: snake_case
+    value: lower_case
 
   # Macros: UPPER_CASE
   - key: readability-identifier-naming.MacroDefinitionCase
