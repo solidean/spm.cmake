@@ -27,6 +27,7 @@ Checks: >-
   -readability-magic-numbers,
   -readability-avoid-nested-conditional-operator,
   -readability-simplify-boolean-expr,
+  -readability-qualified-auto,
   modernize-*,
   -modernize-use-trailing-return-type,
   -modernize-avoid-c-arrays,
