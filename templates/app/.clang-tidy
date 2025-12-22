@@ -45,6 +45,7 @@ Checks: >-
   -cppcoreguidelines-macro-usage,
   -cppcoreguidelines-avoid-non-const-global-variables,
   -cppcoreguidelines-missing-std-forward,
+  -cppcoreguidelines-owning-memory,
   performance-*,
   -performance-enum-size
 
