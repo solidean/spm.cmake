@@ -28,6 +28,7 @@ Checks: >-
   -readability-avoid-nested-conditional-operator,
   -readability-simplify-boolean-expr,
   -readability-qualified-auto,
+  -readability-math-missing-parentheses,
   modernize-*,
   -modernize-use-trailing-return-type,
   -modernize-avoid-c-arrays,
